@@ -9,6 +9,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Base64;
@@ -202,7 +203,7 @@ public class PdfManager {
 		PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
 		appearance.setVisibleSignature(signatureFieldName);
 
-		Calendar calendar = Calendar.getInstance();
+		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT-3"));
 		DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 		Date date = (Date)dateFormat.parse(signingTime);
 
@@ -279,7 +280,7 @@ public class PdfManager {
 		Rectangle signaturePosition = new Rectangle(signatureField.position.x, signatureField.position.y, signatureField.position.x + signatureField.position.width, signatureField.position.y + signatureField.position.height);
 		appearance.setVisibleSignature(signaturePosition, signatureField.position.page, signatureField.name);
 
-		Calendar calendar = Calendar.getInstance();
+		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT-3"));
 		DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 		Date date = (Date)dateFormat.parse(signingTime);
 
