@@ -3,8 +3,11 @@ package com.pdfutil.pdf;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.security.cert.X509CRL;
+import java.security.cert.X509Certificate;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -345,6 +348,8 @@ public class PdfManager {
 		PdfDictionary sig = fields.getSignatureDictionary(signatureFieldName);
 
 		byte[] p7sBytes = Base64.decode(p7sB64);
+		
+		// TODO - list certs and crls found and 'cleaned' from p7s - it will be used when trying to add the dss
 		byte[] p7sCleaned = P7sCleaner.cleanSignatureCertificates(p7sBytes);
 
 		PdfString contentsEntry = sig.getAsString(PdfName.CONTENTS);
@@ -378,6 +383,14 @@ public class PdfManager {
 		afterSigBlock = null;
 
 		ReplaceContentsEntryResponse response = new ReplaceContentsEntryResponse();
+		
+		try {
+			newFileBytes = addDss(newFileBytes, null, null);
+		}
+		catch (Exception e) {
+			// do nothing
+		}
+		
 		response.pdfB64 = new String(Base64.encode(newFileBytes), "UTF-8");
 
 		return response;
@@ -432,4 +445,47 @@ public class PdfManager {
 		response.pdfB64 = new String(Base64.encode(output.toByteArray()), "UTF-8");
 		return response;
 	}
+
+	private static byte[] addDss(byte[] pdfBytes, ArrayList<X509Certificate> certs, ArrayList<X509CRL> crls) throws Exception {
+
+		ByteArrayInputStream input = new ByteArrayInputStream(pdfBytes);
+
+		PdfReader reader = new PdfReader(input);
+		ByteArrayOutputStream output = new ByteArrayOutputStream();
+		PdfStamper	stamper = PdfStamper.createSignature(reader, output, '\0', null, true);
+		
+		AcroFields fields = stamper.getAcroFields(); 
+
+		ArrayList<Vri> vris = new ArrayList<Vri>();
+
+		ArrayList<String> sigs = fields.getSignatureNames();
+		for(int i = 0; i < sigs.size() ; i++) {
+			String sigName = sigs.get(i);
+			if (fields.doesSignatureFieldExist(sigName)) {
+
+				PdfDictionary sig = fields.getSignatureDictionary(sigName);
+
+				PdfString contentsEntry = sig.getAsString(PdfName.CONTENTS);
+				byte[] contents = contentsEntry.getOriginalBytes();
+
+				PdfName sigVriKey = Dss.generateVriKey(contents);
+
+				vris.add(new Vri(sigVriKey, certs, crls));
+				
+			}
+		}
+
+		if (vris.size() > 0) {
+			
+			var dss = new Dss(reader, stamper);
+
+			dss.Generate(vris);
+
+		} 
+		
+		stamper.close();
+		
+		return output.toByteArray();
+	}
+
 }
