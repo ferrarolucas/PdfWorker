@@ -24,7 +24,7 @@ public class P7sCleaner {
         SuperSet hashAlgorithm = new SuperSet(signedDataSequence.getObjectAt(1));
         ContentInfo contentInfo = Asn1Util.getContentInfo(signedDataSequence);
 
-        CertsAndSignerInfos certsAndSignerInfo = Asn1Util.getCertsCrlsSignerInfosAsn1(signedDataSequence);
+        CertsCrlsAndSignerInfos certsAndSignerInfo = Asn1Util.getCertsCrlsSignerInfosAsn1(signedDataSequence);
         SuperSet oldCerts = certsAndSignerInfo.getCertificates();
         
         SignedData oldSignedData = new SignedData((ASN1Set)hashAlgorithm.getObj(), contentInfo, (ASN1Set)oldCerts.getObj(), null, (ASN1Set)certsAndSignerInfo.getSignerInfos().getObj());

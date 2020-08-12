@@ -1,11 +1,12 @@
 package com.pdfutil.asn1;
 
-public class CertsAndSignerInfos {
+public class CertsCrlsAndSignerInfos {
 
 	private SuperSet certificates;
 	private SuperSet signerInfos;
+	private SuperSet crls;
 	
-	public CertsAndSignerInfos() {
+	public CertsCrlsAndSignerInfos() {
 	}
 
 	public SuperSet getCertificates() {
@@ -22,6 +23,14 @@ public class CertsAndSignerInfos {
 
 	public void setSignerInfos(SuperSet signerInfos) {
 		this.signerInfos = signerInfos;
+	}
+
+	public SuperSet getCrls() {
+		return crls;
+	}
+
+	public void setCrls(SuperSet crls) {
+		this.crls = crls;
 	}
 	
 }

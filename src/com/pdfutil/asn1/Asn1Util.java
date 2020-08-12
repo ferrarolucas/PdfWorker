@@ -63,35 +63,40 @@ public class Asn1Util {
 		return signedDataSequence;
 	}
 
-	public static CertsAndSignerInfos getCertsCrlsSignerInfosAsn1(SuperSequence signedDataSequence) throws Exception
+	public static CertsCrlsAndSignerInfos getCertsCrlsSignerInfosAsn1(SuperSequence signedDataSequence) throws Exception
 	{
-		CertsAndSignerInfos certAndSignerInfos = new CertsAndSignerInfos();
-		int quantidadeCamposSignedData = signedDataSequence.size();
-		if (quantidadeCamposSignedData == 6)
+		CertsCrlsAndSignerInfos certCrlsAndSignerInfos = new CertsCrlsAndSignerInfos();
+		int qntyFieldsSignedData = signedDataSequence.size();
+		if (qntyFieldsSignedData == 6)
 		{
 			SuperTaggedObject derTaggedCert = new SuperTaggedObject(signedDataSequence.getObjectAt(3));
-			SuperSequence certificadosSequence = new SuperSequence(derTaggedCert.getObjectParser(0, true));
-			certAndSignerInfos.setCertificates(getDerSetFromDerSequence(certificadosSequence));
-			certAndSignerInfos.setSignerInfos(new SuperSet(signedDataSequence.getObjectAt(5)));
+			SuperSequence certsSequence = new SuperSequence(derTaggedCert.getObjectParser(0, true));
+			certCrlsAndSignerInfos.setCertificates(getDerSetFromDerSequence(certsSequence));
+			
+			SuperTaggedObject derTaggedCrl = new SuperTaggedObject(signedDataSequence.getObjectAt(4));
+			SuperSequence crlsSequence = new SuperSequence(derTaggedCrl.getObjectParser(0, true));
+			certCrlsAndSignerInfos.setCrls(getDerSetFromDerSequence(crlsSequence));
+			
+			certCrlsAndSignerInfos.setSignerInfos(new SuperSet(signedDataSequence.getObjectAt(5)));
 		}
-		else if (quantidadeCamposSignedData == 5)
+		else if (qntyFieldsSignedData == 5)
 		{
 			SuperTaggedObject derTaggedCertOuLcr = new SuperTaggedObject(signedDataSequence.getObjectAt(3));
 			if (derTaggedCertOuLcr.getTagNo() == 0)
 			{
 				SuperSequence certificadosSequence = new SuperSequence(derTaggedCertOuLcr.getObjectParser(0, true));
 				SuperSet certificatesSet = getDerSetFromDerSequence(certificadosSequence);
-				certAndSignerInfos.setCertificates(certificatesSet);
+				certCrlsAndSignerInfos.setCertificates(certificatesSet);
 			}
 
-			certAndSignerInfos.setSignerInfos(new SuperSet(signedDataSequence.getObjectAt(4)));
+			certCrlsAndSignerInfos.setSignerInfos(new SuperSet(signedDataSequence.getObjectAt(4)));
 		}
 		else
 		{
-			certAndSignerInfos.setSignerInfos(new SuperSet(signedDataSequence.getObjectAt(3)));
+			certCrlsAndSignerInfos.setSignerInfos(new SuperSet(signedDataSequence.getObjectAt(3)));
 		}
 
-		return certAndSignerInfos;
+		return certCrlsAndSignerInfos;
 	}
 
 	public static ASN1Set createBerSetForCertificates(X509Certificate certificate) throws Exception
