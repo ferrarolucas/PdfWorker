@@ -2,6 +2,7 @@ package com.pdfutil.asn1;
 
 import java.io.ByteArrayInputStream;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,16 +19,16 @@ import org.bouncycastle.cms.CMSSignedData;
 
 public class P7sCleaner {
 
-	public static byte[] cleanSignatureCertificates(byte[] inputBytes) throws Exception
+	public static CleanedSignature cleanSignatureCertificates(byte[] inputBytes) throws Exception
     {
         SuperSequence signedDataSequence = Asn1Util.getSignedDataSequence(inputBytes);
         SuperSet hashAlgorithm = new SuperSet(signedDataSequence.getObjectAt(1));
         ContentInfo contentInfo = Asn1Util.getContentInfo(signedDataSequence);
 
-        CertsCrlsAndSignerInfos certsAndSignerInfo = Asn1Util.getCertsCrlsSignerInfosAsn1(signedDataSequence);
-        SuperSet oldCerts = certsAndSignerInfo.getCertificates();
+        CertsCrlsAndSignerInfos certsCrlsAndSignerInfo = Asn1Util.getCertsCrlsSignerInfosAsn1(signedDataSequence);
+        SuperSet oldCerts = certsCrlsAndSignerInfo.getCertificates();
         
-        SignedData oldSignedData = new SignedData((ASN1Set)hashAlgorithm.getObj(), contentInfo, (ASN1Set)oldCerts.getObj(), null, (ASN1Set)certsAndSignerInfo.getSignerInfos().getObj());
+        SignedData oldSignedData = new SignedData((ASN1Set)hashAlgorithm.getObj(), contentInfo, (ASN1Set)oldCerts.getObj(), null, (ASN1Set)certsCrlsAndSignerInfo.getSignerInfos().getObj());
         ASN1Set signerInfos = oldSignedData.getSignerInfos();
         ASN1Sequence signerInfoSequence = (ASN1Sequence)signerInfos.getObjectAt(0);
         
@@ -57,12 +58,17 @@ public class P7sCleaner {
         }
 
         X509Certificate signerCertificate = signingCertificate.selectCertificate(certificates);
-
+        
         ASN1Set certsSet = Asn1Util.createBerSetForCertificates(signerCertificate);
         SignedData newSignedData = new SignedData(oldSignedData.getDigestAlgorithms(), oldSignedData.getEncapContentInfo(), certsSet, null, oldSignedData.getSignerInfos());
         ContentInfo newContentInfo = new ContentInfo(CMSObjectIdentifiers.signedData, newSignedData);
         CMSSignedData newCmsSignedData = new CMSSignedData(newContentInfo);
-		return newCmsSignedData.getEncoded();
+        
+        certificates.remove(signerCertificate);
+        ArrayList<X509CRL> extractedCrls = Asn1Util.extractCrls(certsCrlsAndSignerInfo.getCrls());
+		CleanedSignature result = new CleanedSignature(newCmsSignedData.getEncoded(), certificates, extractedCrls);
+        
+		return result;
 		
     }
 	

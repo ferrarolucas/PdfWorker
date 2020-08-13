@@ -1,10 +1,15 @@
 package com.pdfutil.asn1;
 
+import java.io.ByteArrayInputStream;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1Set;
@@ -81,12 +86,17 @@ public class Asn1Util {
 		}
 		else if (qntyFieldsSignedData == 5)
 		{
-			SuperTaggedObject derTaggedCertOuLcr = new SuperTaggedObject(signedDataSequence.getObjectAt(3));
-			if (derTaggedCertOuLcr.getTagNo() == 0)
+			SuperTaggedObject derTaggedCertOrCrl = new SuperTaggedObject(signedDataSequence.getObjectAt(3));
+			if (derTaggedCertOrCrl.getTagNo() == 0)
 			{
-				SuperSequence certificadosSequence = new SuperSequence(derTaggedCertOuLcr.getObjectParser(0, true));
-				SuperSet certificatesSet = getDerSetFromDerSequence(certificadosSequence);
-				certCrlsAndSignerInfos.setCertificates(certificatesSet);
+				SuperSequence certsSequence = new SuperSequence(derTaggedCertOrCrl.getObjectParser(0, true));
+				SuperSet certsSet = getDerSetFromDerSequence(certsSequence);
+				certCrlsAndSignerInfos.setCertificates(certsSet);
+			}
+			else {
+				SuperSequence crlsSequence = new SuperSequence(derTaggedCertOrCrl.getObjectParser(1, true));
+				SuperSet crlsSet = getDerSetFromDerSequence(crlsSequence);
+				certCrlsAndSignerInfos.setCrls(crlsSet);
 			}
 
 			certCrlsAndSignerInfos.setSignerInfos(new SuperSet(signedDataSequence.getObjectAt(4)));
@@ -157,6 +167,23 @@ public class Asn1Util {
 		}
 
 		return new SuperSet(vector, Asn1Type.DER);
+	}
+
+	public static ArrayList<X509CRL> extractCrls(SuperSet crlsSequence) throws Exception {
+		ArrayList<X509CRL> crls = new ArrayList<X509CRL>();
+        if (crlsSequence != null && crlsSequence.size() > 0 )
+        {
+        	CertificateFactory factory = CertificateFactory.getInstance("X.509");
+            for (int i = 0; i < crlsSequence.size(); i++)
+            {
+            	byte[] crlBytes = ((ASN1Object) crlsSequence.getObjectAt(i)).getEncoded();
+            	ByteArrayInputStream stream = new ByteArrayInputStream(crlBytes);
+            	X509CRL crl = (X509CRL) factory.generateCRL(stream);
+            	
+                crls.add(crl);
+            }
+        }
+		return null;
 	}
 
 }

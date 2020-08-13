@@ -54,6 +54,7 @@ import com.pdfutil.InfoModel;
 import com.pdfutil.InserBlankSignatureResponse;
 import com.pdfutil.ReplaceContentsEntryResponse;
 import com.pdfutil.SignatureFieldModel;
+import com.pdfutil.asn1.CleanedSignature;
 import com.pdfutil.asn1.P7sCleaner;
 import com.pdfutil.util.IHash;
 
@@ -349,8 +350,7 @@ public class PdfManager {
 
 		byte[] p7sBytes = Base64.decode(p7sB64);
 		
-		// TODO - list certs and crls found and 'cleaned' from p7s - it will be used when trying to add the dss
-		byte[] p7sCleaned = P7sCleaner.cleanSignatureCertificates(p7sBytes);
+		CleanedSignature p7sCleaned = P7sCleaner.cleanSignatureCertificates(p7sBytes);
 
 		PdfString contentsEntry = sig.getAsString(PdfName.CONTENTS);
 		byte[] contents = contentsEntry.getOriginalBytes();
@@ -358,7 +358,7 @@ public class PdfManager {
 		String contentsString = new String(Hex.encode(contents));
 		contents = null;
 
-		String newSigHex = new String(Hex.encode(p7sCleaned));
+		String newSigHex = new String(Hex.encode(p7sCleaned.getSignature()));
 		int bytesToCompleteNewContents = contentsString.length() - newSigHex.length();
 		for (int i = 0; i < bytesToCompleteNewContents; i++) {
 			newSigHex += "0";
@@ -385,7 +385,7 @@ public class PdfManager {
 		ReplaceContentsEntryResponse response = new ReplaceContentsEntryResponse();
 		
 		try {
-			newFileBytes = addDss(newFileBytes, null, null);
+			newFileBytes = addDss(newFileBytes, p7sCleaned.getExtractedCerts(), p7sCleaned.getExtractedCrls());
 		}
 		catch (Exception e) {
 			// do nothing
