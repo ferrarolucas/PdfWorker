@@ -32,7 +32,6 @@ import com.itextpdf.text.pdf.PdfDictionary;
 import com.itextpdf.text.pdf.PdfFormField;
 import com.itextpdf.text.pdf.PdfIndirectObject;
 import com.itextpdf.text.pdf.PdfName;
-import com.itextpdf.text.pdf.PdfNumber;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfSigLockDictionary;
 import com.itextpdf.text.pdf.PdfSigLockDictionary.LockAction;
@@ -42,7 +41,6 @@ import com.itextpdf.text.pdf.PdfSignatureAppearance.RenderingMode;
 import com.itextpdf.text.pdf.PdfStamper;
 import com.itextpdf.text.pdf.PdfStream;
 import com.itextpdf.text.pdf.PdfString;
-import com.itextpdf.text.pdf.PdfWriter;
 import com.itextpdf.text.pdf.TextField;
 import com.itextpdf.text.xml.xmp.XmpWriter;
 import com.pdfutil.CreateFormResponse;
@@ -190,16 +188,6 @@ public class PdfManager {
 			fieldLock = new PdfSigLockDictionary(LockAction.ALL);
 		}
 
-		stamper.getWriter().setPdfVersion(PdfWriter.PDF_VERSION_1_7);
-
-		PdfDictionary cadesExtensionDictionary = new PdfDictionary();
-		cadesExtensionDictionary.put(PdfName.BASEVERSION, new PdfName("1.7"));
-		cadesExtensionDictionary.put(PdfName.EXTENSIONLEVEL, new PdfNumber(2));
-
-		PdfDictionary esicExtensionDictionary = new PdfDictionary();
-		esicExtensionDictionary.put(new PdfName("ESIC"), cadesExtensionDictionary);
-		reader.getCatalog().put(new PdfName("Extensions"), esicExtensionDictionary);
-
 		PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
 		appearance.setVisibleSignature(signatureFieldName);
 
@@ -208,8 +196,8 @@ public class PdfManager {
 		Date date = (Date)dateFormat.parse(signingTime);
 
 		calendar.setTime(date);
-
-		PdfSignature pdfSignature  = new PdfSignature(PdfName.ADOBE_PPKLITE, new PdfName("ETSI.CAdES.detached"));
+		
+		PdfSignature pdfSignature  = new PdfSignature(PdfName.ADOBE_PPKLITE, PdfName.ADBE_PKCS7_DETACHED);
 		pdfSignature.setName(signerName);
 		pdfSignature.setDate(new PdfDate(calendar));
 
@@ -266,16 +254,6 @@ public class PdfManager {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		PdfStamper	stamper = PdfStamper.createSignature(reader, output, '\0', null, true);
 
-		stamper.getWriter().setPdfVersion(PdfWriter.PDF_VERSION_1_7);
-
-		PdfDictionary cadesExtensionDictionary = new PdfDictionary();
-		cadesExtensionDictionary.put(PdfName.BASEVERSION, new PdfName("1.7"));
-		cadesExtensionDictionary.put(PdfName.EXTENSIONLEVEL, new PdfNumber(2));
-
-		PdfDictionary esicExtensionDictionary = new PdfDictionary();
-		esicExtensionDictionary.put(new PdfName("ESIC"), cadesExtensionDictionary);
-		reader.getCatalog().put(new PdfName("Extensions"), esicExtensionDictionary);
-
 		PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
 		Rectangle signaturePosition = new Rectangle(signatureField.position.x, signatureField.position.y, signatureField.position.x + signatureField.position.width, signatureField.position.y + signatureField.position.height);
 		appearance.setVisibleSignature(signaturePosition, signatureField.position.page, signatureField.name);
@@ -286,7 +264,7 @@ public class PdfManager {
 
 		calendar.setTime(date);
 
-		PdfSignature pdfSignature  = new PdfSignature(PdfName.ADOBE_PPKLITE, new PdfName("ETSI.CAdES.detached"));
+		PdfSignature pdfSignature  = new PdfSignature(PdfName.ADOBE_PPKLITE, PdfName.ADBE_PKCS7_DETACHED);
 		pdfSignature.setName(signerName);
 		pdfSignature.setDate(new PdfDate(calendar));
 
